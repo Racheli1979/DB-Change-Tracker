@@ -210,7 +210,7 @@ def main() -> None:
 
         print()
         print_rtl("=== התקנה הסתיימה! ===")
-        print_rtl("הרץ: DBTracker.exe")
+        print_rtl("הרץ: DBTracker_v0.1.0.exe")
 
     except subprocess.CalledProcessError:
         print()

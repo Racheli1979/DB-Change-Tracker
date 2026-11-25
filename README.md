@@ -16,7 +16,7 @@ Desktop application for connecting to an Oracle database schema, testing connect
 1. **Clone the repository:**
 
    ```bash
-   git clone <repository-url>
+   git clone https://github.com/rivilev/DB-Change-Tracker
    cd DB-Change-Tracker
    ```
 
