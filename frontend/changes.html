@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DB Change Tracker</title>
+
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background:
+                radial-gradient(circle at 15% 10%, rgba(14, 165, 233, .13), transparent 30%),
+                #0b1120;
+        }
+
+        .glass {
+            background: rgba(20, 31, 51, .88);
+            border: 1px solid rgba(148, 163, 184, .13);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, .25);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen text-slate-100">
+
+    <!-- Header -->
+    <header class="border-b border-slate-700/60 bg-slate-900/70">
+        <div class="max-w-7xl mx-auto px-8 py-5 flex items-center justify-between">
+
+            <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-xl bg-cyan-500/15 border border-cyan-400/20
+                            flex items-center justify-center text-cyan-400 text-2xl">
+                    ◈
+                </div>
+
+                <div>
+                    <h1 class="text-xl font-bold tracking-wide">
+                        DB Change Tracker
+                    </h1>
+                    <p class="text-xs text-slate-400 mt-1">
+                        Oracle Schema Management
+                    </p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-slate-400">
+                    גרסה <span class="app-version" dir="ltr">...</span>
+                </span>
+
+                <div id="connection-badge"
+                     class="hidden items-center gap-2 rounded-full
+                            bg-emerald-500/10 border border-emerald-500/20
+                            px-4 py-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
+                    <span class="text-sm text-emerald-400">מחובר</span>
+                </div>
+            </div>
+
+        </div>
+    </header>
+
+
+    <!-- Main -->
+    <main class="max-w-7xl mx-auto px-8 py-12">
+
+        <!-- Page title -->
+        <div class="mb-10">
+            <p class="text-cyan-400 text-sm font-semibold mb-3">
+                WORKSPACE
+            </p>
+
+            <h2 class="text-3xl font-bold mb-3">
+                סביבת העבודה שלך
+            </h2>
+
+            <p class="text-slate-400">
+                החיבור לסכמת Oracle הושלם בהצלחה.
+            </p>
+        </div>
+
+
+        <!-- Connection status -->
+        <section id="connection-status" class="glass rounded-2xl p-7 mb-8">
+
+            <div class="flex items-start justify-between">
+
+                <div class="flex items-center gap-4">
+
+                    <div class="w-14 h-14 rounded-xl bg-emerald-500/10
+                                flex items-center justify-center
+                                text-emerald-400 text-3xl">
+                        ✓
+                    </div>
+
+                    <div>
+                        <h3 class="text-lg font-bold mb-1">
+                            החיבור למסד הנתונים פעיל
+                        </h3>
+
+                        <p class="text-sm text-slate-400">
+                            ניתן להמשיך לעבוד עם סביבת Oracle.
+                        </p>
+                    </div>
+
+                </div>
+
+                <span class="text-xs text-emerald-400 bg-emerald-500/10
+                             border border-emerald-500/20 rounded-full px-3 py-2">
+                    Connection successful
+                </span>
+
+            </div>
+
+            <div class="border-t border-slate-700/60 mt-6 pt-5">
+                <div class="grid grid-cols-1 md:grid-cols-5 gap-6">
+
+                    <div>
+                        <p class="text-xs text-slate-500 mb-2">DATABASE</p>
+                        <p class="text-sm font-semibold text-slate-200">
+                            Oracle Database
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-slate-500 mb-2">CONNECTION STATUS</p>
+                        <p class="text-sm font-semibold text-emerald-400">
+                            Connected
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-slate-500 mb-2">APPLICATION VERSION</p>
+                        <p class="app-version text-sm font-semibold text-slate-200">
+                            ...
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-slate-500 mb-2">ORACLE VERSION</p>
+                        <p id="oracle-version" class="text-sm font-semibold text-slate-200">
+                            לא זמין
+                        </p>
+                    </div>
+
+                    <div>
+                        <p class="text-xs text-slate-500 mb-2">SESSION USER</p>
+                        <p id="session-user" class="text-sm font-semibold text-slate-200">
+                            לא זמין
+                        </p>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
+
+        <!-- Changes area -->
+        <section class="glass rounded-2xl p-8">
+
+            <div class="flex items-center justify-between mb-8">
+
+                <div>
+                    <h3 class="text-xl font-bold mb-2">
+                        היסטוריית שינויים
+                    </h3>
+
+                    <p class="text-sm text-slate-400">
+                        מעקב אחר שינויים בסכמת Oracle
+                    </p>
+                </div>
+
+                <span class="text-xs text-slate-500 bg-slate-800
+                             border border-slate-700 rounded-lg px-3 py-2">
+                    שלב פיתוח עתידי
+                </span>
+
+            </div>
+
+
+            <!-- Empty state -->
+            <div class="min-h-64 flex flex-col items-center
+                        justify-center text-center
+                        border border-dashed border-slate-700 rounded-xl
+                        bg-slate-900/30 px-6 py-10">
+
+                <div class="w-16 h-16 rounded-2xl bg-cyan-500/10
+                            flex items-center justify-center
+                            text-cyan-400 text-3xl mb-5">
+                    ◷
+                </div>
+
+                <h4 class="text-lg font-semibold mb-2">
+                    עדיין אין נתוני שינויים
+                </h4>
+
+                <p class="text-sm text-slate-400 max-w-md leading-7">
+                    אזור זה ישמש להצגת אובייקטים ושינויים שהתגלו
+                    בסכמת Oracle. יכולת זו תתווסף בגרסה הבאה.
+                </p>
+
+                <span class="mt-5 text-xs text-cyan-400
+                             bg-cyan-500/10 rounded-full px-4 py-2">
+                    Planned for version 0.2.0
+                </span>
+
+            </div>
+
+        </section>
+
+
+        <!-- Footer -->
+        <footer class="mt-10 flex items-center justify-between
+                       text-xs text-slate-500">
+
+            <span>DB Change Tracker</span>
+            <span>Version <span class="app-version" dir="ltr">...</span></span>
+
+        </footer>
+
+    </main>
+
+    <script>
+        async function loadVersion() {
+            try {
+                const response = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'get_version'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('לא ניתן לטעון את גרסת האפליקציה.');
+                }
+
+                const result = await response.json();
+
+                document.querySelectorAll('.app-version').forEach(element => {
+                    element.textContent = result.version;
+                });
+
+            } catch (error) {
+                document.querySelectorAll('.app-version').forEach(element => {
+                    element.textContent = 'לא זמין';
+                });
+            }
+        }
+
+
+        async function loadSession() {
+            const connectionBadge =
+                document.getElementById('connection-badge');
+
+            const connectionStatus =
+                document.getElementById('connection-status');
+
+            try {
+                const response = await fetch('/api/connect', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'get_session'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('לא בוצעה התחברות.');
+                }
+
+                const session = await response.json();
+
+                document.getElementById('oracle-version').textContent =
+                    session.db_version;
+
+                document.getElementById('session-user').textContent =
+                    session.session_user;
+
+                connectionBadge.classList.remove('hidden');
+                connectionBadge.classList.add('flex');
+
+            } catch (error) {
+                connectionStatus.classList.add('hidden');
+
+                document.querySelector('main > div.mb-10')
+                    .classList.add('hidden');
+
+                document.querySelector('main').insertAdjacentHTML(
+                    'afterbegin',
+                    `<section class="glass rounded-2xl p-8 mb-8">
+                        <h2 class="text-xl font-bold mb-3">
+                            לא בוצעה התחברות
+                        </h2>
+
+                        <p class="text-sm text-slate-400">
+                            כדי להיכנס לסביבת העבודה, יש להתחבר תחילה למסד הנתונים באמצעות מסך ההתחברות.
+                        </p>
+
+                        <a href="login.html"
+                           class="inline-block mt-5 text-cyan-400 hover:text-cyan-300">
+                            חזרה למסך ההתחברות
+                        </a>
+                    </section>`
+                );
+            }
+        }
+
+
+        loadVersion();
+        loadSession();
+    </script>
+
+</body>
+</html>

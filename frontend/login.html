@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<title>DB Change Tracker — התחברות</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: 'Segoe UI', sans-serif; background: #0f172a; color: #e2e8f0; margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+  .inp { background: #0f172a; border: 1px solid #334155; border-radius: 8px; color: #e2e8f0; padding: 10px 14px; font-size: 14px; outline: none; width: 100%; }
+  .inp:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px #3b82f620; }
+  .inp::placeholder { color: #475569; }
+  .btn-p { background: #3b82f6; color: white; border: none; border-radius: 8px; padding: 11px 20px; font-size: 14px; font-weight: 600; cursor: pointer; width: 100%; }
+  .btn-p:hover { background: #2563eb; }
+  .btn-p:disabled { background: #334155; color: #64748b; cursor: not-allowed; }
+  label { font-size: 12px; color: #64748b; display: block; margin-bottom: 5px; }
+  .field { margin-bottom: 14px; }
+  .err { background: #dc262618; border: 1px solid #dc262640; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #f87171; display: none; }
+  .ok  { background: #05966918; border: 1px solid #05966940; border-radius: 8px; padding: 10px 14px; font-size: 13px; color: #34d399; display: none; }
+  .spinner { display: none; width: 18px; height: 18px; border: 2px solid #ffffff40; border-top-color: white; border-radius: 50%; animation: spin 0.7s linear infinite; margin: 0 auto; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .divider { display: flex; align-items: center; gap: 10px; margin: 16px 0; }
+  .divider::before, .divider::after { content: ''; flex: 1; height: 1px; background: #334155; }
+  .divider span { font-size: 11px; color: #475569; }
+  .saved-box { background: #0f172a; border: 1px solid #334155; border-radius: 8px; padding: 12px 14px; cursor: pointer; transition: border-color 0.2s; }
+  .saved-box:hover { border-color: #3b82f6; }
+</style>
+</head>
+<body>
+
+<div style="width: 420px;">
+
+  <!-- Logo -->
+  <div style="text-align:center; margin-bottom: 32px;">
+    <div style="width:52px;height:52px;background:#3b82f6;border-radius:14px;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:20px;margin:0 auto 12px;">DB</div>
+    <div style="font-size:22px;font-weight:700;">DB Change Tracker</div>
+    <div style="font-size:13px;color:#475569;margin-top:4px;">התחבר לסכמת Oracle שלך</div>
+    <div style="font-size:12px;color:#64748b;margin-top:6px;">גרסה <span id="app-version" dir="ltr">...</span></div>
+  </div>
+
+  <!-- Card -->
+  <div style="background:#1e293b;border:1px solid #334155;border-radius:16px;padding:28px;">
+
+    <!-- saved connection (shown if exists) -->
+    <div id="saved-section" style="display:none;">
+      <div style="font-size:12px;color:#64748b;margin-bottom:8px;font-weight:600;">חיבור שמור</div>
+      <div class="saved-box" onclick="useSaved()">
+        <div style="display:flex;align-items:center;justify-content:space-between;">
+          <div>
+            <div id="saved-host" style="font-size:13px;font-weight:600;color:#e2e8f0;"></div>
+            <div id="saved-details" style="font-size:12px;color:#64748b;margin-top:2px;"></div>
+          </div>
+          <div style="font-size:12px;color:#34d399;">✅ שמור</div>
+        </div>
+      </div>
+      <button type="button" onclick="deleteSaved()" style="background:none;border:none;color:#f87171;font-size:12px;cursor:pointer;margin-top:8px;">
+        מחיקת חיבור שמור
+      </button>
+      <div class="divider"><span>או התחבר לסכמה חדשה</span></div>
+    </div>
+
+    <!-- form -->
+    <form onsubmit="connect(event)">
+      <div style="display:grid;grid-template-columns:1fr 90px;gap:10px;">
+        <div class="field">
+          <label>Host / IP <span style="color:#f87171;">*</span></label>
+          <input class="inp" id="host" placeholder="your-oracle-host" required />
+        </div>
+        <div class="field">
+          <label>Port</label>
+          <input class="inp" id="port" placeholder="1521" value="1521" type="number" min="1" max="65535" />
+        </div>
+      </div>
+
+      <div class="field">
+        <label>Service Name <span style="color:#f87171;">*</span></label>
+        <input class="inp" id="service" placeholder="YOUR_SERVICE" required />
+      </div>
+
+      <div class="field">
+        <label>Schema / User <span style="color:#f87171;">*</span></label>
+        <input class="inp" id="user" placeholder="YOUR_SCHEMA" required />
+      </div>
+
+      <div class="field">
+        <label>סיסמה <span style="color:#f87171;">*</span></label>
+        <div style="position:relative;">
+          <input class="inp" id="pass" type="password" placeholder="••••••••" required style="padding-left:40px;" />
+
+          <span id="saved-password-mask"
+                style="display:none;position:absolute;right:14px;top:50%;transform:translateY(-50%);color:#e2e8f0;pointer-events:none;font-size:14px;">
+            ••••••••
+          </span>
+
+          <button type="button" onclick="togglePass()" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);background:none;border:none;color:#475569;cursor:pointer;font-size:14px;" id="eye">👁</button>
+        </div>
+        <div style="font-size:11px;color:#475569;margin-top:5px;">🔒 הסיסמה נשלחת ל־API המקומי לצורך בדיקת החיבור ונשמרת מוצפנת במחשב רק אם בוחרים לזכור את החיבור.</div>
+      </div>
+
+      <div class="field" style="margin-bottom:18px;">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:#94a3b8;">
+          <input type="checkbox" id="save-conn" checked style="width:15px;height:15px;accent-color:#3b82f6;" />
+          זכור חיבור זה (מוצפן)
+        </label>
+      </div>
+
+      <!-- messages -->
+      <div class="err" id="err-msg">❌ <span id="err-text">שגיאת חיבור</span></div>
+      <div class="ok" id="ok-msg">✅ מחובר בהצלחה! מעביר...</div>
+
+      <button class="btn-p" type="submit" id="submit-btn" style="margin-top:10px;">
+        <span id="btn-text">התחבר</span>
+        <div class="spinner" id="spinner"></div>
+      </button>
+    </form>
+
+  </div>
+
+  <div style="text-align:center;margin-top:16px;font-size:12px;color:#334155;">
+    DB Change Tracker · Oracle Free/XE תואם
+  </div>
+</div>
+
+<script>
+const API_URL = '/api/connect';
+
+let usingSavedConnection = false;
+let savedConnection = null;
+
+async function apiRequest(payload) {
+  const response = await fetch(API_URL, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  const result = await response.json().catch(() => ({}));
+
+  if (!response.ok) {
+    let message = result.detail || 'אירעה שגיאה בבקשה.';
+
+    if (Array.isArray(message)) {
+      message = message.map(item => item.msg).join(', ');
+    }
+
+    throw new Error(message);
+  }
+
+  return result;
+}
+
+function showError(message) {
+  document.getElementById('err-text').textContent = message;
+  document.getElementById('err-msg').style.display = 'block';
+  document.getElementById('ok-msg').style.display = 'none';
+}
+
+function togglePass() {
+  const p = document.getElementById('pass');
+  const e = document.getElementById('eye');
+
+  if (p.type === 'password') {
+    p.type = 'text';
+    e.textContent = '🙈';
+  } else {
+    p.type = 'password';
+    e.textContent = '👁';
+  }
+}
+
+async function loadVersion() {
+  try {
+    const result = await apiRequest({ action: 'get_version' });
+    document.getElementById('app-version').textContent = result.version;
+  } catch (error) {
+    document.getElementById('app-version').textContent = 'לא זמין';
+  }
+}
+
+async function loadSavedConnection() {
+  try {
+    const result = await apiRequest({
+      action: 'get_saved'
+    });
+
+    const section = document.getElementById('saved-section');
+
+    if (!result.exists) {
+      savedConnection = null;
+      section.style.display = 'none';
+      return;
+    }
+
+    savedConnection = result;
+
+    document.getElementById('saved-host').textContent =
+      `${result.host} · ${result.port}`;
+
+    document.getElementById('saved-details').textContent =
+      `${result.service} · ${result.user}`;
+
+    section.style.display = 'block';
+
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function useSaved() {
+  if (!savedConnection) {
+    showError('לא נמצאו פרטי חיבור שמורים.');
+    return;
+  }
+
+  usingSavedConnection = true;
+
+  document.getElementById('host').value = savedConnection.host;
+  document.getElementById('port').value = savedConnection.port;
+  document.getElementById('service').value = savedConnection.service;
+  document.getElementById('user').value = savedConnection.user;
+
+  const password = document.getElementById('pass');
+  password.value = '';
+  password.required = false;
+  password.placeholder = '';
+
+  document.getElementById('saved-password-mask').style.display = 'block';
+  document.getElementById('eye').style.display = 'none';
+
+  document.getElementById('save-conn').checked = true;
+  document.getElementById('err-msg').style.display = 'none';
+  document.getElementById('ok-msg').style.display = 'none';
+}
+
+async function deleteSaved() {
+  if (!confirm('האם למחוק את פרטי החיבור השמורים?')) {
+    return;
+  }
+
+  try {
+    await apiRequest({
+      action: 'delete_saved'
+    });
+
+    document.getElementById('saved-section').style.display = 'none';
+
+    usingSavedConnection = false;
+    savedConnection = null;
+
+    document.getElementById('host').value = '';
+    document.getElementById('port').value = '1521';
+    document.getElementById('service').value = '';
+    document.getElementById('user').value = '';
+
+    const password = document.getElementById('pass');
+    password.value = '';
+    password.required = true;
+    password.placeholder = '••••••••';
+
+    document.getElementById('saved-password-mask').style.display = 'none';
+    document.getElementById('eye').style.display = 'block';
+    document.getElementById('eye').textContent = '👁';
+
+    alert('החיבור השמור נמחק בהצלחה.');
+
+  } catch (error) {
+    showError(error.message);
+  }
+}
+
+function connect(e) {
+  e.preventDefault();
+
+  const btn = document.getElementById('submit-btn');
+  const txt = document.getElementById('btn-text');
+  const spin = document.getElementById('spinner');
+  const err = document.getElementById('err-msg');
+  const ok = document.getElementById('ok-msg');
+
+  err.style.display = 'none';
+  ok.style.display = 'none';
+
+  btn.disabled = true;
+  txt.style.display = 'none';
+  spin.style.display = 'block';
+
+  const password = document.getElementById('pass').value;
+
+  let requestData;
+
+  if (usingSavedConnection) {
+    requestData = {
+      action: 'connect_saved'
+    };
+  } else {
+    requestData = {
+      action: 'connect',
+      host: document.getElementById('host').value.trim(),
+      port: Number(document.getElementById('port').value || 1521),
+      service: document.getElementById('service').value.trim(),
+      user: document.getElementById('user').value.trim(),
+      password: password,
+      save: document.getElementById('save-conn').checked
+    };
+  }
+
+  apiRequest(requestData)
+    .then(result => {
+      ok.textContent =
+        `✅ התחברות הצליחה! משתמש: ${result.session_user}. מעביר...`;
+      ok.style.display = 'block';
+
+      setTimeout(() => {
+        window.location.href = '/changes';
+      }, 900);
+    })
+    .catch(error => {
+      showError(error.message);
+    })
+    .finally(() => {
+      btn.disabled = false;
+      txt.style.display = 'block';
+      spin.style.display = 'none';
+    });
+}
+
+['host', 'port', 'service', 'user'].forEach(id => {
+  document.getElementById(id).addEventListener('input', () => {
+    if (usingSavedConnection) {
+      usingSavedConnection = false;
+
+      const password = document.getElementById('pass');
+      password.required = true;
+      password.placeholder = '••••••••';
+      password.value = '';
+
+      document.getElementById('saved-password-mask').style.display = 'none';
+      document.getElementById('eye').style.display = 'block';
+      document.getElementById('eye').textContent = '👁';
+    }
+  });
+});
+
+document.getElementById('pass').addEventListener('input', () => {
+  if (usingSavedConnection) {
+    usingSavedConnection = false;
+
+    document.getElementById('pass').required = true;
+    document.getElementById('pass').placeholder = '••••••••';
+
+    document.getElementById('saved-password-mask').style.display = 'none';
+    document.getElementById('eye').style.display = 'block';
+    document.getElementById('eye').textContent = '👁';
+  }
+});
+
+loadVersion();
+loadSavedConnection();
+</script>
+</body>
+</html>
